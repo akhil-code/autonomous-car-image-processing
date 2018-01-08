@@ -1,5 +1,11 @@
 import numpy as np
-import cv2,math,matplotlib
+import cv2,math
+
+
+# reset global state of average values
+avgLeft = (0, 0, 0, 0)
+avgRight = (0, 0, 0, 0)
+
 
 def perp( a ) :
     b = np.empty_like(a)
@@ -17,9 +23,21 @@ def seg_intersect(a1,a2, b1,b2):
     dap = perp(da)
     denom = np.dot( dap, db)
     num = np.dot( dap, dp )
-    return (num / denom.astype(float))*db + b1
+    try:
+        return (num / denom.astype(float))*db + b1
+    except:
+        return (num / (denom.astype(float)+1))*db + b1
 
-def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
+def movingAverage(avg, new_sample, N=20):
+    if (avg == 0):
+        return new_sample
+    avg -= avg / N;
+    avg += new_sample / N;
+    return avg;
+
+def draw_lines(img, lines, color=[255,0,0],thickness=2):
+    global avgLeft,avgRight
+
     # state variables to keep track of most dominant segment
     largestLeftLineSize = 0
     largestRightLineSize = 0
@@ -27,12 +45,11 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
     largestRightLine = (0,0,0,0)
 
     if lines is None:
-        avgx1, avgy1, avgx2, avgy2 = avgLeft
-        cv2.line(img, (int(avgx1), int(avgy1)), (int(avgx2), int(avgy2)), [255,255,255], 12) #draw left line
-        avgx1, avgy1, avgx2, avgy2 = avgRight
+        avgx1,avgy1,avgx2,avgy2=avgLeft
+        cv2.line(img,(int(avgx1),int(avgy1)),(int(avgx2),int(avgy2)),[255,255,255],12) #draw left line
+        avgx1,avgy1,avgx2,avgy2=avgRight
         cv2.line(img, (int(avgx1), int(avgy1)), (int(avgx2), int(avgy2)), [255,255,255], 12) #draw right line
         return
-
     for line in lines:
         for x1,y1,x2,y2 in line:
             size = math.hypot(x2 - x1, y2 - y1)
@@ -71,7 +88,6 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
     cv2.line(img, (int(upLeftPoint[0]), int(upLeftPoint[1])), (int(downLeftPoint[0]), int(downLeftPoint[1])), [0, 0, 255], 8) #draw left line
 
     # Calculate the average position of detected left lane over multiple video frames and draw
-    global avgLeft
     avgx1, avgy1, avgx2, avgy2 = avgLeft
     avgLeft = (movingAverage(avgx1, upLeftPoint[0]), movingAverage(avgy1, upLeftPoint[1]), movingAverage(avgx2, downLeftPoint[0]), movingAverage(avgy2, downLeftPoint[1]))
     avgx1, avgy1, avgx2, avgy2 = avgLeft
@@ -92,7 +108,6 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
     cv2.line(img, (int(upRightPoint[0]), int(upRightPoint[1])), (int(downRightPoint[0]), int(downRightPoint[1])), [0, 0, 255], 8) #draw left line
 
     # Calculate the average position of detected right lane over multiple video frames and draw
-    global avgRight
     avgx1, avgy1, avgx2, avgy2 = avgRight
     avgRight = (movingAverage(avgx1, upRightPoint[0]), movingAverage(avgy1, upRightPoint[1]), movingAverage(avgx2, downRightPoint[0]), movingAverage(avgy2, downRightPoint[1]))
     avgx1, avgy1, avgx2, avgy2 = avgRight
@@ -119,9 +134,6 @@ def hough_lines(img, rho, theta, threshold, min_line_len, max_line_gap):
 
 ################################################################################################################################
 
-# reset global state of average values
-avgLeft = (0, 0, 0, 0)
-avgRight = (0, 0, 0, 0)
 
 #read image
 img = cv2.imread('lane.jpeg')
@@ -139,8 +151,8 @@ cv2.imshow('canny',edgesImage)
 cv2.waitKey(0)
 
 #dimensions of image
-h,w,_ = img.shape
-vertices = np.array([[[3*w/4,3*h/5],[w/4,3*h/5],[40,h],[w-40,h]]],dtype=np.int32)
+imgHeight,imgWidth,_ = img.shape
+vertices = np.array([[[3*imgWidth/4,3*imgHeight/5],[imgWidth/4,3*imgHeight/5],[40,imgHeight],[imgWidth-40,imgHeight]]],dtype=np.int32)
 
 roi = region_of_interest(edgesImage,vertices)
 cv2.imshow('roi',roi)
