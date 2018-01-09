@@ -36,7 +36,7 @@ def movingAverage(avg, new_sample, N=20):
 
 def draw_lines(img,srcImg, lines, color=[255,0,0],thickness=2):
     global avgLeft,avgRight
-    print 'length: '+str(len(lines))
+    # print 'length: '+str(len(lines))
 
     # state variables to keep track of most dominant segment
     largestLeftLineSize = 0
@@ -141,24 +141,34 @@ def hough_lines(img,srcImg,rho, theta, threshold, min_line_len, max_line_gap):
 ################################################################################################################################
 
 
-#read image
-img = cv2.imread('lane.jpeg')
-#apply blur
-blurImg = cv2.GaussianBlur(img,(11,11),0) #kernel size 11x11
-#canny edge detection
-edgesImage = cv2.Canny(blurImg,40,50)
+cap = cv2.VideoCapture('video3.mp4')
 
-#dimensions of image
-imgHeight,imgWidth,_ = img.shape
-# vertices = np.array([[[3*imgWidth/4,3*imgHeight/5],[imgWidth/4,3*imgHeight/5],[40,imgHeight],[imgWidth-40,imgHeight]]],dtype=np.int32)
-vertices = [[3*imgWidth/4,3*imgHeight/5],[imgWidth/4,3*imgHeight/5],[40,imgHeight],[imgWidth-40,imgHeight]]
+while True:
+    #read image
+    _,img = cap.read()
+    if img is None:
+        break
 
-roi = region_of_interest(edgesImage,vertices)
-lineMarkedImage = hough_lines(roi,img,1, np.pi/180, 40, 30, 200)
+    #apply blur
+    blurImg = cv2.GaussianBlur(img,(11,11),0) #kernel size 11x11
+    #canny edge detection
+    edgesImage = cv2.Canny(blurImg,40,50)
+
+    #dimensions of image
+    imgHeight,imgWidth,_ = img.shape
+    # vertices = np.array([[[3*imgWidth/4,3*imgHeight/5],[imgWidth/4,3*imgHeight/5],[40,imgHeight],[imgWidth-40,imgHeight]]],dtype=np.int32)
+    vertices = [[3*imgWidth/4,3*imgHeight/5],[imgWidth/4,3*imgHeight/5],[40,imgHeight],[imgWidth-40,imgHeight]]
+
+    roi = region_of_interest(edgesImage,vertices)
+    lineMarkedImage = hough_lines(roi,img,1, np.pi/180, 40, 30, 200)
 
 
-cv2.imshow('roi',roi)
-cv2.waitKey(0)
+    cv2.imshow('input',img)
+    # cv2.imshow('roi',roi)
+    # cv2.waitKey(0)
 
-cv2.imshow('hough lines',lineMarkedImage)
-cv2.waitKey(0)
+    cv2.imshow('hough lines',lineMarkedImage)
+    cv2.waitKey(10)
+
+print 'video completed'
+cv2.destroyAllWindows()
